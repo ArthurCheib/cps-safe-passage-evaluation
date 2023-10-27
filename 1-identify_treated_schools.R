@@ -4,7 +4,7 @@
 library(tidyverse)
 library(here)
 
-cps_treated_files <- list.files(here('0-raw_data'), pattern = 'safepassage')
+cps_treated_files <- list.files(here('raw_data'), pattern = 'safepassage')
 
 # Initialize an empty dataframe 
 df_final <- data.frame()
@@ -12,7 +12,7 @@ df_final <- data.frame()
 for (file in cps_treated_files) {
   
   # Read the file
-  df_temp <- read_csv(here('0-raw_data', file))
+  df_temp <- read_csv(here('raw_data', file))
   year <- str_extract(file, "\\d{4}")
   
   # For 2014, we need to rename the columns to standardize
@@ -32,4 +32,4 @@ for (file in cps_treated_files) {
   
 }
 
-write_csv(df_final, here('1-clean_data', 'safe_passage_schools.csv'))
+write_csv(df_final, here('clean_data', 'safe_passage_schools.csv'))
