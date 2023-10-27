@@ -56,7 +56,10 @@ names(df_crime)[names(df_crime) == "latitude"] <- "latitude_crime"
 names(df_crime)[names(df_crime) == "longitude"] <- "longitude_crime"
 
 ## Schools dataset
-schools <- read.csv(here("clean_data", "cps_database.csv"))
+schools <- read.csv(here("clean_data", "cps_database.csv")) %>% 
+  mutate(school_lat = y,
+         school_long = x) %>% 
+  select(-c(x,y))
 
 # Computing the distance
 distance_list <- list()
