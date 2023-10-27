@@ -35,7 +35,7 @@ get_dataset <- function(dic_year_code) {
     
     # Save the raw data using `here`
     write_csv(raw_temp,
-              here("0-raw_data", paste0('safepassage_', year, '.csv')))
+              here("raw_data", paste0('safepassage_', year, '.csv')))
   }
 }
 
