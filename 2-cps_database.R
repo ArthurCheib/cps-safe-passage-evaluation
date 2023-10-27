@@ -1,0 +1,1 @@
+## This code aims to create a database containing main info for all CPS schools ##

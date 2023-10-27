@@ -1,3 +1,5 @@
+## This code aims to create a table with all the schools in the Safe Passage Program (name + code) ##
+
 ## Packages
 library(tidyverse)
 library(here)

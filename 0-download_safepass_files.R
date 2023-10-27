@@ -1,3 +1,6 @@
+## This code aims to download raw data from all schools in the Safe Passage Program ##
+
+## Libraries
 library(tidyverse)
 library(RSocrata)
 library(here)
