@@ -14,6 +14,8 @@ ROW_MAX_NUM <- 400000
 
 ## Getting the data through the API endpoit
 crime_vector <- c('theft', 'homicide', 'battery')
+crime_vector <- crime_vector[1]
+
 #my_token <- readline(prompt = 'Insert token: ')
 #my_email <- readline(prompt = 'Insert email: ')
 #my_password <- readline(prompt = 'Insert password: ')
@@ -36,7 +38,6 @@ get_chicago_portal_data <- function(dataset_id, file_name, query=NULL,
   }
   
   df <- fromJSON(content(res, "text", encoding="UTF-8"), flatten = TRUE)
-  write.csv(df, here('clean_data', file_name), row.names = FALSE)
   
   return(df)
 }

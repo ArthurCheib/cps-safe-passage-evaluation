@@ -3,7 +3,6 @@
 ## Libraries
 library(here)
 library(tidyverse)
-library(pracma)
 
 ## Function to drop columns from a data frame
 drop_columns <- function(df, keep_list) {
@@ -26,27 +25,16 @@ haver_dist <- function(latA, longA, latB, longB) {
   # Earth radius in miles
   earth_miles <- 3963.19
   
-  # Convert to radians
-  lat_A <- degrees_to_radians(latA)
-  long_A <- degrees_to_radians(longA)
-  lat_B <- degrees_to_radians(latB)
-  long_B <- degrees_to_radians(longB)
-  
   # Applying the formula
-  lat_diff <- lat_B - lat_A
-  long_diff <- long_B - long_A
+  lat_diff <- degrees_to_radians(latB) - degrees_to_radians(latA)
+  long_diff <- degrees_to_radians(longB) - degrees_to_radians(longA)
   
-  result1 <- sin(lat_diff / 2)^2 + cos(lat_A) * cos(lat_B) * sin(long_diff / 2)^2
+  result1 <- sin(lat_diff / 2)^2 + cos(degrees_to_radians(latA)) * cos(degrees_to_radians(latB) ) * sin(long_diff / 2)^2
   result2 <- (2 * asin(sqrt(result1))) * earth_miles
   
   return(result2)
   
 }
-
-haver_dist(latA = df_crime$latitude_crime[1],
-           longA = df_crime$longitude_crime[1],
-           latB = schools$y[1],
-           longB = schools$x[1])
 
 ## Opening the crime data
 df_crime <- read.csv(here('clean_data', 'crime_data.csv'))
@@ -59,29 +47,41 @@ names(df_crime)[names(df_crime) == "longitude"] <- "longitude_crime"
 schools <- read.csv(here("clean_data", "cps_database.csv")) %>% 
   mutate(school_lat = y,
          school_long = x) %>% 
-  select(-c(x,y))
+  select(-c(x,y)) %>% 
+  as_tibble() %>% 
+  select(-c(year, grades, sch_type)) %>% 
+  distinct() %>% 
+  arrange(school_id) %>% 
+  group_by(school_id) %>%
+  slice(1) %>% 
+  ungroup()
 
-# Computing the distance
-distance_list <- list()
+## Using purr - we create a grid of all combinations of school and crime
+grid <- expand.grid(i = 1:nrow(schools), j = 1:nrow(df_crime))
 
-for(i in 1:nrow(schools)) {
+# map2_dfr to iterate over the grid
+distance_df <- map2_dfr(grid$i, grid$j, ~{
+  i <- .x
+  j <- .y
   
-  ## For every school - get the school lat/long
-  lat_school <- schools$school_lat[i]
-  long_school <- schools$school_long[i]
+  distance <- haver_dist(latA = schools$school_lat[i],
+                         longA = schools$school_long[i],
+                         latB = df_crime$latitude_crime[j],
+                         longB = df_crime$longitude_crime[j])
   
-  ## For every crime - get the cimr lat/long and compute the distance for a given school i
-  for(j in 1:nrow(df_crime)) {
-    lat_crime <- df_crime$latitude_crime[j]
-    long_crime <- df_crime$longitude_crime[j]
-    distance <- haver_dist(latA = lat_school, longA = long_school, latB = lat_crime, longB = long_crime)
+  # Use an inline if condition to filter by distance
+  if(distance <= 0.250) {
     
-    ## Because we won't need more than a few yards (keep it onlt <500 yards, which is roughly 500m too)
-    if(distance <= 0.5) {
-      distance_list[[length(distance_list) + 1]] <- list(school_id = schools$school_id[i],
-                                                         crime_id = df_crime$id[j], 
-                                                         distance = distance)
-    }
+    return(data.frame(school_id = schools$school_id[i], 
+                      crime_id = df_crime$id[j], 
+                      distance = distance))
+  } else {
+    
+    return(NULL)
+  
   }
-}
+  
+})
 
+## Saving file
+write_csv(distance_df, here('clean_data', 'crime_schools-distance.csv'))
