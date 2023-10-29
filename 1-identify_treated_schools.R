@@ -32,10 +32,22 @@ for (file in cps_treated_files) {
   
 }
 
-## Saving the schools
-write_csv(df_final, here('clean_data', 'safe_passage_schools.csv'))
-
 ## Now, creating the datafarme that contains onlt those schools that:
-#- Where neve before 2015
-#- Once inside the program (in 2015), remained there for 2016, 17 and 18
+# (1) - Where never before 2015
+# (2) - Once inside the program (in 2015), remained there for 2016, 17 and 18
 # Those fulfilling both conditions are within the treated group
+df_final2 <- df_final %>% 
+  as_tibble() %>% 
+  pivot_wider(names_from = year, values_from = school_nam) %>% 
+  setNames(janitor::make_clean_names(colnames(.))) %>% 
+  ## Filterting for condition (1)
+  filter(is.na(x2013) & is.na(x2014)) %>% 
+  ## Filtering for conditions (2)
+  filter(!is.na(x2015) & !is.na(x2016) & !is.na(x2017)) %>%
+  ## Getting back to the relevant information only (id + name)
+  select(1,5) %>% 
+  rename('school_nam' = x2016)
+
+
+## Saving the schools
+write_csv(df_final2, here('clean_data', 'safe_passage_schools.csv'))
