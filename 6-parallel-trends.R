@@ -4,8 +4,12 @@
 library(tidyverse)
 library(here)
 
-## Schools dataset
-schools <- read_csv(here('clean_data', 'cps_schools_database.csv'))
+## Loading the database of schools + creating the treatment status column
+safe_passage_schools <- read_csv(here('clean_data', 'safe_passage_schools.csv')) %>% 
+  pull(schoolid)
+
+schools <- read_csv(here('clean_data', 'cps_schools_database.csv')) %>% 
+  mutate(treatment = if_else(school_id %in% safe_passage_schools, 1, 0))
 
 ## Crime dataset
 datasets <- c("crimes_battery_raw.csv", "crimes_homicide_raw.csv", "crimes_theft_raw.csv")
@@ -29,11 +33,15 @@ crime_distance <- read_csv(here("clean_data", "crime_schools_distance.csv"))
 df_schools_distance <- crime_distance %>% 
   left_join(schools, by = 'school_id')
 
-crime <- merge(crime, crimes[, c(1, 4)], by = "crime_id", all.x = TRUE)
-
 df_crime <- df_schools_distance %>% 
-  left_join(crimes, by = 'crime_id') %>%
-  filter(distance < 0.25)
+  left_join(crimes %>% 
+              select(c(crime_id, primary_type, year)),
+            by = "crime_id") %>% 
+  filter(distance < 0.25) %>% 
+  select(crime_id, primary_type, year, distance, school_id, school_nm)
+
+## Checking the data
+df_crime
 
 # Grouping and summarizing data
 df_crime_plot <- df_crime %>%
