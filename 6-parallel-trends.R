@@ -126,7 +126,7 @@ df_attendance <- read.csv(here::here("clean_data", "cps_attendance.csv")) %>%
   filter(school_name != 'CITYWIDE',
          year >= 2013, year <= 2017) %>% 
   ## Moment to select which grades to filter for
-  filter(grade %in% as.character(7,8,9,10,11,12)) %>% 
+  filter(grade %in% as.character(c(7,8,9,10,11,12))) %>% 
   filter(!is.na(attendance)) %>%
   select(-c(network, group))
 
@@ -177,3 +177,27 @@ attendance_plot
 ggsave(filename = here::here("images", "3-parallel-trends_attendance.png"),
        plot = attendance_plot, width = 12, height = 6)
 
+
+## Misc
+# Since most of the work was done here > let's create the dataset for FE reg right here!
+df_attendance_fe <- df_attendance %>% 
+  group_by(school_id, school_name, year) %>%
+  summarise(avg_attendance = mean(attendance, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  ## Adding the control + treatment info
+  mutate(treatment = if_else(school_id %in% safe_passage_schools, 1, 0)) %>% 
+  filter(treatment == 1 | school_id %in% control_schools) %>% 
+  select(school_id, year, avg_attendance)
+
+df_fe <- df_crime %>%
+  filter(treatment == 1 | school_id %in% control_schools) %>% 
+  mutate(control = if_else(treatment == 0, 1, 0)) %>% 
+  select(1,2,3,4,5,7,6,8) %>% 
+  arrange(school_id, year) %>% 
+  left_join(df_attendance_fe, by = c('school_id', 'year')) %>% 
+  setNames(c('crime_id', 'crime_type', 'crime_school_distance', 'year',
+             'school_id', 'school_name', 'treatment', 'control', 'school_attendance'))
+
+## Saving the regression fe dataset
+write_csv(df_fe, here('clean_data', 'fixed_effects_data.csv'))
+  
