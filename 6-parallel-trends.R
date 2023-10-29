@@ -1,5 +1,7 @@
 ## This code plots the two parallel trends graphs - a soft assumption before we run our fixed effects regression ##
 
+#### CRIME PLOT ####
+
 ## Libraries
 library(tidyverse)
 library(here)
@@ -82,7 +84,7 @@ df_crime_plot <- df_crime %>%
   ungroup()
 
 ## Plotting the total average crime in the schools surrounding for: treated vs control schools
-parallel_plot <- df_crime_plot %>% 
+parallel_plot_crime <- df_crime_plot %>% 
   ggplot(aes(x = year, y = avg_crime, color = as.factor(treatment), group = treatment)) +
   geom_line(size = 1) +
   geom_point(size = 3) +
@@ -102,4 +104,76 @@ parallel_plot <- df_crime_plot %>%
 
 # Save the plot
 ggsave(filename = here("images", "2-parallel-trends_crimes.png"),
-       plot = parallel_plot, width = 12, height = 6)
+       plot = parallel_plot_crime, width = 12, height = 6)
+
+
+
+
+
+#### ATTENDANCE PLOT ####
+## Attendance dataset
+## Filtering the dataset
+# 1) no pre-k nor elementary
+# 2) 2013 <> 2017 for year
+# 3) Average for each school, not each grade
+df_attendance <- read.csv(here::here("clean_data", "cps_attendance.csv")) %>% 
+  as_tibble() %>% 
+  setNames(janitor::make_clean_names(colnames(.))) %>%
+  pivot_longer(cols = str_c('x', c(2003:2019, 2021, 2022)),
+               names_to = 'year',
+               values_to = 'attendance') %>% 
+  mutate(year = as.numeric(str_remove(year, 'x'))) %>% 
+  filter(school_name != 'CITYWIDE',
+         year >= 2013, year <= 2017) %>% 
+  ## Moment to select which grades to filter for
+  filter(grade %in% as.character(7,8,9,10,11,12)) %>% 
+  filter(!is.na(attendance)) %>%
+  select(-c(network, group))
+
+df_attendance2 <- df_attendance %>% 
+  group_by(school_id, school_name, year) %>%
+  summarise(avg_attendance = mean(attendance, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+## Adding the control + treatment info
+  mutate(treatment = if_else(school_id %in% safe_passage_schools, 1, 0)) %>% 
+  filter(treatment == 1 | school_id %in% control_schools) %>%
+## Filtering out schools with no data for some years
+  pivot_wider(names_from = year, values_from = avg_attendance) %>% 
+  setNames(janitor::make_clean_names(colnames(.))) %>% 
+  filter(!is.na(x2013) & !is.na(x2014) & !is.na(x2015) & !is.na(x2016) & !is.na(x2017)) %>% 
+  pivot_longer(cols = str_c('x', c(2013:2017)),
+               names_to = 'year', 
+               values_to = 'avg_attendance') %>% 
+  mutate(year = as.numeric(str_remove(year, 'x')))
+
+## Plotting the attendance
+parallel_plot_attendance <- df_attendance2 %>% 
+  group_by(year, treatment) %>%
+  summarise(avg_attendance_rt = mean(avg_attendance, na.rm = TRUE))
+
+
+# Plotting the total average attendance rate for treated vs control schools
+attendance_plot <- parallel_plot_attendance %>% 
+  ggplot(aes(x = year, y = avg_attendance_rt,
+             color = as.factor(treatment),
+             group = treatment)) +
+  geom_line(size = 1) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("1" = "dodgerblue", "0" = "grey"), 
+                     name = "Treatment",
+                     breaks = c("0", "1"),
+                     labels = c("Control", "Treated")) +
+  labs(title = "Attendance Rate accross CPS - 2013 to 2018",
+       x = "",
+       y = "Average Attendance Rate",
+       caption = 'Source: Chicago Data Portal 2013 - 2018') +
+  geom_vline(aes(xintercept = 2015), color = "red", linetype = "dashed", size = 1.15) +
+  theme_light() +
+  theme(legend.position = "bottom")
+
+attendance_plot
+
+# Save the plot
+ggsave(filename = here::here("images", "3-parallel-trends_attendance.png"),
+       plot = attendance_plot, width = 12, height = 6)
+
