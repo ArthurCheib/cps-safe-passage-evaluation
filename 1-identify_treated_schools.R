@@ -32,4 +32,10 @@ for (file in cps_treated_files) {
   
 }
 
+## Saving the schools
 write_csv(df_final, here('clean_data', 'safe_passage_schools.csv'))
+
+## Now, creating the datafarme that contains onlt those schools that:
+#- Where neve before 2015
+#- Once inside the program (in 2015), remained there for 2016, 17 and 18
+# Those fulfilling both conditions are within the treated group
