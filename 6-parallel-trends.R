@@ -38,13 +38,42 @@ df_crime <- df_schools_distance %>%
               select(c(crime_id, primary_type, year)),
             by = "crime_id") %>% 
   filter(distance < 0.25) %>% 
-  select(crime_id, primary_type, year, distance, school_id, school_nm)
+  select(crime_id, primary_type, year, distance, school_id, treatment, school_nm) %>% 
+  ## We only need 2yrs before and 2yrs after implementation (we can skip 2018)
+  filter(year != 2018)
 
-## Checking the data
-df_crime
+## Powering the concept of control group
+# Schools not in the program, but in areas with 'similar' levels of crimes
+# Similar levels in the years prior to the intervention (2013, 2014, 2015)
+df_control <- df_crime %>%
+  group_by(school_id, school_nm, year, treatment) %>%
+  summarise(total_crimes = n_distinct(crime_id)) %>%
+  ungroup() %>% 
+  filter(!year %in% c(2015, 2016, 2017)) %>% 
+  ## outliers (but 99% likelihood of being wrongly inputed data)
+  filter(total_crimes <= 1000)
+
+## Lower and Upper bounds
+lower_bound <- mean(df_control$total_crimes) - 0.5 * sd(df_control$total_crimes)
+upper_bound <- mean(df_control$total_crimes) + 2 * sd(df_control$total_crimes)
+
+## Finding the control schools
+df_control2 <- df_control %>% 
+  filter(total_crimes >= lower_bound & upper_bound <= upper_bound) %>% 
+  filter(treatment == 0) %>% 
+  select(school_id, school_nm) %>%
+  distinct()
+
+## Saving control schools
+write_csv(df_control2, here('clean_data', 'control_schools.csv'))
 
 # Grouping and summarizing data
+control_schools <- df_control2 %>% 
+  pull(school_id)
+
 df_crime_plot <- df_crime %>%
+  filter(treatment == 1 | school_id %in% control_schools) %>% 
+  mutate(control = if_else(treatment == 0, 1, 0)) %>% 
   group_by(school_id, year, treatment) %>%
   summarise(total_crimes = n_distinct(crime_id)) %>%
   ungroup() %>%
@@ -53,17 +82,24 @@ df_crime_plot <- df_crime %>%
   ungroup()
 
 ## Plotting the total average crime in the schools surrounding for: treated vs control schools
-plot <- ggplot(df_crime, aes(x = year, y = avg_crime, color = as.factor(treatment), group = treatment)) +
-  geom_line(aes(linetype = as.factor(treatment), shape = as.factor(treatment)), size = 1) +
+parallel_plot <- df_crime_plot %>% 
+  ggplot(aes(x = year, y = avg_crime, color = as.factor(treatment), group = treatment)) +
+  geom_line(size = 1) +
   geom_point(size = 3) +
-  scale_color_manual(values = c("1" = "green", "0" = "blue"), name = "Treatment") +
+  scale_color_manual(values = c("1" = "dodgerblue", "0" = "grey"), 
+                     name = "Group",
+                     breaks = c("0", "1"),
+                     labels = c("Control", "Treated")) +
   labs(title = "Average Crimes in the School's surroundings - 0.25 miles radius",
-       x = "Year", y = "Average Total of Crimes") +
-  geom_vline(aes(xintercept = 2015), color = "red", linetype = "dashed") +
-  theme_minimal()
-
-# Show the plot
-print(plot)
+       subtitle = "Parallel trend's - Fixed Effects Assumption",
+       x = "",
+       y = "Total of Crimes",
+       caption = 'Source: Chicago Data Portal 2013 - 2018') +
+  geom_vline(aes(xintercept = 2015), color = "red", linetype = "dashed", size = 1) +
+  theme_light() +
+  theme(legend.position="bottom", 
+        title = element_text(size = 16))
 
 # Save the plot
-ggsave(filename = here("images", "2-parallel-trends_crimes.png"), plot = plot, width = 12, height = 6)
+ggsave(filename = here("images", "2-parallel-trends_crimes.png"),
+       plot = parallel_plot, width = 12, height = 6)
