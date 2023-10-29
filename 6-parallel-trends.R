@@ -5,7 +5,7 @@ library(tidyverse)
 library(here)
 
 ## Schools dataset
-schools <- read.csv(here('clean_data', 'cps_schools_database.csv'))
+schools <- read_csv(here('clean_data', 'cps_schools_database.csv'))
 
 ## Crime dataset
 datasets <- c("crimes_battery_raw.csv", "crimes_homicide_raw.csv", "crimes_theft_raw.csv")
@@ -31,10 +31,12 @@ df_schools_distance <- crime_distance %>%
 
 crime <- merge(crime, crimes[, c(1, 4)], by = "crime_id", all.x = TRUE)
 
-crime <- filter(crime, distance < 0.25)
+df_crime <- df_schools_distance %>% 
+  left_join(crimes, by = 'crime_id') %>%
+  filter(distance < 0.25)
 
 # Grouping and summarizing data
-df_crime <- crime %>%
+df_crime_plot <- df_crime %>%
   group_by(school_id, year, treatment) %>%
   summarise(total_crimes = n_distinct(crime_id)) %>%
   ungroup() %>%
