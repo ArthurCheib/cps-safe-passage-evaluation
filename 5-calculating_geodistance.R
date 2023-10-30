@@ -44,17 +44,7 @@ names(df_crime)[names(df_crime) == "latitude"] <- "latitude_crime"
 names(df_crime)[names(df_crime) == "longitude"] <- "longitude_crime"
 
 ## Schools dataset
-schools <- read.csv(here("clean_data", "cps_database.csv")) %>% 
-  mutate(school_lat = y,
-         school_long = x) %>% 
-  select(-c(x,y)) %>% 
-  as_tibble() %>% 
-  select(-c(year, grades, sch_type)) %>% 
-  distinct() %>% 
-  arrange(school_id) %>% 
-  group_by(school_id) %>%
-  slice(1) %>% 
-  ungroup()
+schools <- read.csv(here("clean_data", "cps_schools_database.csv"))
 
 ## Using purr - we create a grid of all combinations of school and crime
 grid <- expand.grid(i = 1:nrow(schools), j = 1:nrow(df_crime))
