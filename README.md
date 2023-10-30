@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 # Evaluating the Chicago Public School's Safe Passage Program
 
 ## Data and Policy Summer Scholar Program - UChicago
