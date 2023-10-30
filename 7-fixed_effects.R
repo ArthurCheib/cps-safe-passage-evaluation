@@ -10,6 +10,7 @@ library(lmtest)
 data_fe <- read_csv(here('clean_data', 'fixed_effects_data.csv'))
 
 fe <- data_fe %>% 
+  filter(crime_school_distance <= 0.100) %>% 
   group_by(school_id, year, treatment) %>% 
   summarize(total_crime = n_distinct(crime_id),
             attendance_rate = mean(school_attendance, na.rm = TRUE)) %>% 
