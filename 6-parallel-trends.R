@@ -59,20 +59,26 @@ df_control <- df_crime %>%
 lower_bound <- mean(df_control$total_crimes) - 0.5 * sd(df_control$total_crimes)
 upper_bound <- mean(df_control$total_crimes) + 2 * sd(df_control$total_crimes)
 
-## Finding the control schools
+
+## Polishing control schools
+control <- read_csv(here('clean_data', 'control.csv')) %>% 
+  pull(SCHOOLID)
+
+# Finding the control schools
 df_control2 <- df_control %>% 
   filter(total_crimes >= lower_bound & upper_bound <= upper_bound) %>% 
   filter(treatment == 0) %>% 
   select(school_id, school_nm) %>%
-  distinct()
+  distinct() %>% 
+  filter(school_id %in% control) 
+
+control_schools <- df_control2 %>%
+  pull(school_id)
 
 ## Saving control schools
 write_csv(df_control2, here('clean_data', 'control_schools.csv'))
 
 # Grouping and summarizing data
-control_schools <- df_control2 %>% 
-  pull(school_id)
-
 df_crime_plot <- df_crime %>%
   filter(treatment == 1 | school_id %in% control_schools) %>% 
   mutate(control = if_else(treatment == 0, 1, 0)) %>% 
@@ -195,6 +201,7 @@ df_fe <- df_crime %>%
   select(1,2,3,4,5,7,6,8) %>% 
   arrange(school_id, year) %>% 
   left_join(df_attendance_fe, by = c('school_id', 'year')) %>% 
+  select(1,2,4,3,5,6,7,8,9) %>% 
   setNames(c('crime_id', 'crime_type', 'crime_school_distance', 'year',
              'school_id', 'school_name', 'treatment', 'control', 'school_attendance'))
 
