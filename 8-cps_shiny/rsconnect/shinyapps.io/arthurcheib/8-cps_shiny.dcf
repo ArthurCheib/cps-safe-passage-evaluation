@@ -1,0 +1,13 @@
+name: 8-cps_shiny
+title: 8-cps_shiny
+username:
+account: arthurcheib
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 10373002
+bundleId: 7875038
+url: https://arthurcheib.shinyapps.io/8-cps_shiny/
+when: 1698777643.59454
+lastSyncTime: 1698777643.59455
+asMultiple: FALSE
+asStatic: FALSE

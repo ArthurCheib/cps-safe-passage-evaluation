@@ -2,10 +2,11 @@
 library(here)
 library(tidyverse)
 library(leaflet)
+library(shiny)
 
 ## Data
-data <- read_csv(here('clean_data', 'shiny_data.csv'))
-data_leaflet <- read_csv(here('clean_data', 'leaflet_data.csv'))
+data <- read_csv(here('8-cps_shiny', 'shiny_data.csv'))
+data_leaflet <- read_csv(here('8-cps_shiny', 'leaflet_data.csv'))
 
 ## SHINY SERVER ##
 server <- function(input, output) {

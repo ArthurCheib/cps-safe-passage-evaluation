@@ -80,7 +80,7 @@ ui <- fluidPage(
       ),
       
       ## Adding our leaflet map
-      leafletOutput("map")
+      leaflet::leafletOutput("map")
       
     )
   )
